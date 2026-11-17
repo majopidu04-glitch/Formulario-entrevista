@@ -90,7 +90,7 @@ export const SavedRecordsPanel: React.FC<SavedRecordsPanelProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".json,application/json"
+            accept=".json,.html,.htm,application/json,text/html"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -101,7 +101,7 @@ export const SavedRecordsPanel: React.FC<SavedRecordsPanelProps> = ({
             className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
           >
             <Upload className="w-3.5 h-3.5" />
-            <span>Importar .JSON</span>
+            <span>Abrir Archivo (.json / .html)</span>
           </button>
 
           <button

@@ -1,7 +1,12 @@
 import React from 'react';
-import { X, Printer, FileText, FileJson, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
+import { X, Printer, FileText, FileJson, FileSpreadsheet, Globe, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { InterviewRecord } from './types';
 import { calculateCompletion } from './data';
+import {
+  exportSingleRecordWord,
+  exportSingleRecordHtml,
+  exportSingleRecordCsv
+} from './storage';
 
 interface DiagnosticReportModalProps {
   record: InterviewRecord | null;
@@ -91,107 +96,6 @@ export const DiagnosticReportModal: React.FC<DiagnosticReportModalProps> = ({
     });
   }
 
-  const buildMarkdownReport = () => {
-    const channelsList = [
-      ...answers.channels,
-      ...(answers.otherChannel.trim() ? [`Otro: ${answers.otherChannel.trim()}`] : [])
-    ];
-    const toolsList = [
-      ...answers.toolsUsed,
-      ...(answers.otherTools.trim() ? [`Otro: ${answers.otherTools.trim()}`] : [])
-    ];
-
-    return `# Informe de Entrevista y Diagnóstico de Procesos - Servicio al Cliente
-
-## 1. Ficha de Identificación
-- **Empresa:** ${answers.companyName || 'Sin diligenciar'}
-- **Sector / Giro:** ${answers.sector || 'Sin diligenciar'}
-- **Fecha y hora:** ${answers.interviewDate || '-'} ${answers.interviewTime || ''}
-- **Entrevistador(a):** ${answers.interviewerName || 'Sin diligenciar'}
-- **Persona entrevistada:** ${answers.intervieweeName || 'Sin diligenciar'} (${answers.intervieweeRole || 'Sin cargo'})
-- **Área:** ${answers.areaName || 'Servicio al Cliente'}
-- **Completitud del formato:** ${completion.filled}/${completion.total} (${completion.percent}%)
-
-## 2. Contexto y Estructura del Área
-- **Objetivo del área:** ${answers.areaObjective || 'Sin diligenciar'}
-- **Relación con otras áreas:** ${answers.crossAreaCoordination || 'Sin diligenciar'}
-- **Tamaño del equipo:** ${answers.teamSize || 'Sin diligenciar'}
-- **Roles:** ${answers.teamRoles || 'Sin diligenciar'}
-- **Horarios de atención:** ${answers.serviceHours || 'Sin diligenciar'}
-- **Volumen de solicitudes:** ${answers.monthlyVolume || 'Sin diligenciar'}
-- **Canales activos:** ${channelsList.length > 0 ? channelsList.join(', ') : 'Ninguno seleccionado'}
-
-## 3. Ciclo de Atención y Procesos
-- **Flujo de Preventa / Consultas:** ${answers.presaleFlow || 'Sin diligenciar'}
-- **Seguimiento durante compra/servicio (${answers.trackingProactivity || 'sin definir'}):** ${answers.orderTrackingFlow || 'Sin diligenciar'}
-- **PQRS - Recepción y registro:** ${answers.pqrsReception || 'Sin diligenciar'}
-- **PQRS - Validación:** ${answers.pqrsValidation || 'Sin diligenciar'}
-- **PQRS - Escalamiento:** ${answers.pqrsEscalation || 'Sin diligenciar'}
-- **PQRS - Resolución y cierre:** ${answers.pqrsClosure || 'Sin diligenciar'}
-- **Protocolos / Guiones (${answers.protocolExistence || 'sin definir'}):** ${answers.protocolNotes || 'Sin diligenciar'}
-
-## 4. Tiempos, SLA y Dependencias
-- **Tiempo de Primera Respuesta (FRT):** ${answers.firstResponseTime || 'Sin diligenciar'}
-- **Tiempo de Solución Definitiva:** ${answers.resolutionTime || 'Sin diligenciar'}
-- **Criterios de priorización:** ${answers.prioritizationCriteria || 'Sin diligenciar'}
-- **Información requerida de otras áreas:** ${answers.internalDependencies || 'Sin diligenciar'}
-- **Tiempo de espera interno:** ${answers.internalQueryWaitTime || 'Sin diligenciar'}
-
-## 5. Herramientas y Registro de Datos
-- **Herramientas utilizadas:** ${toolsList.length > 0 ? toolsList.join(', ') : 'Ninguna seleccionada'}
-- **Integración de canales:** ${answers.channelsIntegrated || 'Sin definir'}
-- **Datos almacenados del cliente:** ${answers.customerDataStored || 'Sin diligenciar'}
-- **Consulta de historial:** ${answers.historyLookupProcess || 'Sin diligenciar'}
-- **Automatizaciones actuales:** ${answers.currentAutomations || 'Sin diligenciar'}
-
-## 6. Puntos Críticos y Cuellos de Botella
-- **Motivos frecuentes de contacto:** ${answers.topContactReasons || 'Sin diligenciar'}
-- **Principales cuellos de botella:** ${answers.mainBottlenecks || 'Sin diligenciar'}
-- **Tareas manuales repetitivas:** ${answers.repetitiveManualTasks || 'Sin diligenciar'}
-- **Manejo de picos o ausencias:** ${answers.peakDemandHandling || 'Sin diligenciar'}
-
-## 7. Indicadores (KPIs) y Visión del Proyecto
-- **KPIs medidos:** ${answers.kpisMeasured.length > 0 ? answers.kpisMeasured.join(', ') : 'Ninguno seleccionado'}
-- **Lo que más valoran los clientes:** ${answers.customerPraise || 'Sin diligenciar'}
-- **Principales críticas de clientes:** ${answers.customerComplaints || 'Sin diligenciar'}
-- **Problema prioritario a resolver:** ${answers.priorityProblemToSolve || 'Sin diligenciar'}
-- **Restricciones y presupuesto:** ${answers.constraintsAndBudget || 'Sin diligenciar'}
-
-## 8. Cierre, Evidencias y Valoración
-- **Valoración estandarización de protocolos:** ${answers.standardizationLevel ? `${answers.standardizationLevel}/5` : 'Sin calificar'}
-- **Madurez operativa percibida:** ${answers.perceivedMaturity ? `${answers.perceivedMaturity}/5` : 'Sin calificar'}
-- **Evidencias solicitadas:** ${answers.evidenceChecklist.length > 0 ? answers.evidenceChecklist.join(', ') : 'Ninguna marcada'}
-- **Observaciones del entrevistador:** ${answers.interviewerObservations || 'Sin observaciones'}
-${
-  answers.customQuestions && answers.customQuestions.length > 0
-    ? `\n## 9. Preguntas Adicionales Registradas\n${answers.customQuestions
-        .map(
-          (cq, idx) =>
-            `- **${idx + 1}. ${cq.question || 'Pregunta sin título'}:** ${cq.answer || 'Sin respuesta'}`
-        )
-        .join('\n')}`
-    : ''
-}
-
----
-Generado desde Formato de Entrevista de Servicio al Cliente (${new Date(meta.updatedAt).toLocaleString('es-ES')})
-`;
-  };
-
-  const handleDownloadText = () => {
-    const content = buildMarkdownReport();
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const safeName = (answers.companyName || 'empresa')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-');
-    a.href = url;
-    a.download = `diagnostico-servicio-cliente-${safeName}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleDownloadJson = () => {
     const blob = new Blob([JSON.stringify(record, null, 2)], {
       type: 'application/json;charset=utf-8'
@@ -227,24 +131,39 @@ Generado desde Formato de Entrevista de Servicio al Cliente (${new Date(meta.upd
               {answers.companyName || 'Empresa sin especificar'} · Diligenciado {completion.filled} de {completion.total} campos ({completion.percent}%)
             </p>
           </div>
-          <div className="flex items-center gap-2 print:hidden">
+          <div className="flex flex-wrap items-center gap-2 print:hidden">
             <button
-              onClick={handleDownloadText}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap"
+              onClick={() => exportSingleRecordWord(record)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
             >
-              <FileText className="w-3.5 h-3.5" />
-              <span>Exportar .MD</span>
+              <FileText className="w-3.5 h-3.5 text-blue-700" />
+              <span>Word (.doc)</span>
+            </button>
+            <button
+              onClick={() => exportSingleRecordCsv(record)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Excel (.csv)</span>
+            </button>
+            <button
+              onClick={() => exportSingleRecordHtml(record)}
+              title="Se abre en cualquier navegador y permite volver a cargarlo en el formulario"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-teal-700" />
+              <span>Archivo (.html)</span>
             </button>
             <button
               onClick={handleDownloadJson}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
             >
               <FileJson className="w-3.5 h-3.5" />
-              <span>JSON</span>
+              <span>.JSON</span>
             </button>
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-md transition-colors whitespace-nowrap cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>Imprimir / PDF</span>
@@ -252,7 +171,7 @@ Generado desde Formato de Entrevista de Servicio al Cliente (${new Date(meta.upd
             <button
               onClick={onClose}
               aria-label="Cerrar informe"
-              className="p-1.5 text-slate-400 hover:text-slate-800 ml-1"
+              className="p-1.5 text-slate-400 hover:text-slate-800 ml-1 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FileCheck2,
   Plus,
@@ -12,7 +12,10 @@ import {
   RotateCcw,
   Save,
   FolderOpen,
-  Edit3
+  Edit3,
+  Upload,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { InterviewAnswers, InterviewRecord, CustomQuestion } from './types';
 import {
@@ -30,7 +33,9 @@ import {
   loadActiveIdSync,
   saveActiveIdSync,
   saveRecordsSync,
-  loadIndexedDbFallback
+  loadIndexedDbFallback,
+  exportSingleRecordHtml,
+  parseImportedRecords
 } from './storage';
 import { DiagnosticReportModal } from './DiagnosticReportModal';
 import { SavedRecordsPanel } from './SavedRecordsPanel';
@@ -52,7 +57,9 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [lastSavedTime, setLastSavedTime] = useState<string>('');
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const [hasUnsavedTouch, setHasUnsavedTouch] = useState<boolean>(false);
+  const openFileInputRef = useRef<HTMLInputElement>(null);
 
   const activeRecord = records.find((r) => r.meta.id === activeId) || records[0];
   const answers = activeRecord.answers;
@@ -307,6 +314,29 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
     if (imported[0]) {
       setActiveId(imported[0].meta.id);
       saveActiveIdSync(imported[0].meta.id);
+      setViewMode('form');
+    }
+  };
+
+  const handleOpenFileFromBar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFileError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const content = await file.text();
+      const imported = parseImportedRecords(content);
+      handleImportRecords(imported);
+      setSaveFeedback(`Archivo "${file.name}" abierto y listo para modificar`);
+      setTimeout(() => setSaveFeedback(null), 4000);
+    } catch (err) {
+      setFileError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo abrir el archivo seleccionado.'
+      );
+      setTimeout(() => setFileError(null), 5000);
+    } finally {
+      e.target.value = '';
     }
   };
 
@@ -431,12 +461,20 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
             </button>
           </div>
 
-          {/* Active Record Title + Explicit Save Button */}
+          {/* Active Record Title + Open/Save File + Explicit Save Button */}
           {viewMode === 'form' && (
-            <div className="flex flex-wrap items-center gap-2.5 flex-1 justify-end">
-              <div className="flex items-center gap-2">
-                <label htmlFor="active-title" className="text-xs text-slate-500 whitespace-nowrap hidden sm:inline">
-                  Registro activo:
+            <div className="flex flex-wrap items-center gap-2 flex-1 justify-end">
+              <input
+                ref={openFileInputRef}
+                type="file"
+                accept=".json,.html,.htm,application/json,text/html"
+                onChange={handleOpenFileFromBar}
+                className="hidden"
+              />
+
+              <div className="flex items-center gap-1.5">
+                <label htmlFor="active-title" className="text-xs text-slate-500 whitespace-nowrap hidden xl:inline">
+                  Registro:
                 </label>
                 <input
                   id="active-title"
@@ -444,7 +482,7 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
                   value={activeRecord.meta.title}
                   onChange={(e) => updateMetaTitle(e.target.value)}
                   placeholder="Nombre del registro..."
-                  className="px-2.5 py-1.5 text-xs font-medium text-slate-900 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:border-teal-700 w-44 sm:w-56"
+                  className="px-2.5 py-1.5 text-xs font-medium text-slate-900 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:border-teal-700 w-36 sm:w-48"
                 />
               </div>
 
@@ -462,6 +500,26 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
 
               <button
                 type="button"
+                onClick={() => openFileInputRef.current?.click()}
+                title="Abrir un archivo .json o .html guardado para seguir editando"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                <span>Abrir Archivo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => exportSingleRecordHtml(activeRecord)}
+                title="Descargar archivo .html legible en cualquier navegador y editable al volver a abrirlo"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 hover:border-slate-400 rounded-md transition-colors whitespace-nowrap cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Guardar Archivo</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handleExplicitSave()}
                 className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-medium text-white bg-teal-700 hover:bg-teal-800 rounded-md transition-colors whitespace-nowrap cursor-pointer shadow-xs"
               >
@@ -473,13 +531,20 @@ export const InterviewApp: React.FC<InterviewAppProps> = ({ onOpenStore }) => {
         </div>
       </div>
 
-      {/* Save Confirmation Banner */}
+      {/* Save Confirmation / File Error Banner */}
       {saveFeedback && (
         <div className="fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-xl border border-slate-700 flex items-center gap-2.5 text-xs print:hidden">
           <span className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shrink-0">
             <Check className="w-3 h-3 text-white stroke-[3]" />
           </span>
           <span className="font-medium">{saveFeedback}</span>
+        </div>
+      )}
+
+      {fileError && (
+        <div className="fixed bottom-5 right-5 z-50 bg-rose-950 text-white px-4 py-3 rounded-lg shadow-xl border border-rose-700 flex items-center gap-2.5 text-xs print:hidden max-w-sm">
+          <AlertCircle className="w-4 h-4 text-rose-300 shrink-0" />
+          <span>{fileError}</span>
         </div>
       )}
 
