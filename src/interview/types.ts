@@ -1,8 +1,16 @@
 export interface InterviewMeta {
   id: string;
   title: string;
+  status: 'borrador' | 'completada';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomQuestion {
+  id: string;
+  sectionId: string;
+  question: string;
+  answer: string;
 }
 
 export interface InterviewAnswers {
@@ -70,6 +78,9 @@ export interface InterviewAnswers {
   interviewerObservations: string;
   standardizationLevel: number; // 1-5
   perceivedMaturity: number; // 1-5
+
+  // Preguntas personalizadas agregadas por el usuario
+  customQuestions: CustomQuestion[];
 }
 
 export interface InterviewRecord {

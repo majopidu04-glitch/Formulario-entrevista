@@ -161,7 +161,8 @@ export function createEmptyAnswers(): InterviewAnswers {
     evidenceChecklist: [],
     interviewerObservations: '',
     standardizationLevel: 0,
-    perceivedMaturity: 0
+    perceivedMaturity: 0,
+    customQuestions: []
   };
 }
 
@@ -171,10 +172,40 @@ export function createNewInterview(title = 'Nueva Entrevista'): InterviewRecord 
     meta: {
       id: `ent-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       title,
+      status: 'borrador',
       createdAt: now,
       updatedAt: now
     },
     answers: createEmptyAnswers()
+  };
+}
+
+export function normalizeInterviewRecord(raw: Partial<InterviewRecord>): InterviewRecord {
+  const base = createNewInterview();
+  const rawMeta = (raw.meta || {}) as Partial<InterviewRecord['meta']>;
+  const rawAnswers = (raw.answers || {}) as Partial<InterviewAnswers>;
+
+  return {
+    meta: {
+      id: rawMeta.id || base.meta.id,
+      title: rawMeta.title || rawAnswers.companyName || base.meta.title,
+      status: rawMeta.status === 'completada' ? 'completada' : 'borrador',
+      createdAt: rawMeta.createdAt || base.meta.createdAt,
+      updatedAt: rawMeta.updatedAt || base.meta.updatedAt
+    },
+    answers: {
+      ...base.answers,
+      ...rawAnswers,
+      channels: Array.isArray(rawAnswers.channels) ? rawAnswers.channels : [],
+      toolsUsed: Array.isArray(rawAnswers.toolsUsed) ? rawAnswers.toolsUsed : [],
+      kpisMeasured: Array.isArray(rawAnswers.kpisMeasured) ? rawAnswers.kpisMeasured : [],
+      evidenceChecklist: Array.isArray(rawAnswers.evidenceChecklist)
+        ? rawAnswers.evidenceChecklist
+        : [],
+      customQuestions: Array.isArray(rawAnswers.customQuestions)
+        ? rawAnswers.customQuestions
+        : []
+    }
   };
 }
 
@@ -185,6 +216,7 @@ export function createSampleInterview(): InterviewRecord {
     meta: {
       id: `sample-glow-${Date.now()}`,
       title: 'Ejemplo · Glow Beauty',
+      status: 'completada',
       createdAt: now,
       updatedAt: now
     },
@@ -276,7 +308,8 @@ export function createSampleInterview(): InterviewRecord {
       interviewerObservations:
         'Excelente disposición del equipo. La oportunidad principal está en unificar canales, estandarizar guiones PQRS e integrar el seguimiento de órdenes.',
       standardizationLevel: 2,
-      perceivedMaturity: 3
+      perceivedMaturity: 3,
+      customQuestions: []
     }
   };
 }

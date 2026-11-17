@@ -162,6 +162,16 @@ export const DiagnosticReportModal: React.FC<DiagnosticReportModalProps> = ({
 - **Madurez operativa percibida:** ${answers.perceivedMaturity ? `${answers.perceivedMaturity}/5` : 'Sin calificar'}
 - **Evidencias solicitadas:** ${answers.evidenceChecklist.length > 0 ? answers.evidenceChecklist.join(', ') : 'Ninguna marcada'}
 - **Observaciones del entrevistador:** ${answers.interviewerObservations || 'Sin observaciones'}
+${
+  answers.customQuestions && answers.customQuestions.length > 0
+    ? `\n## 9. Preguntas Adicionales Registradas\n${answers.customQuestions
+        .map(
+          (cq, idx) =>
+            `- **${idx + 1}. ${cq.question || 'Pregunta sin título'}:** ${cq.answer || 'Sin respuesta'}`
+        )
+        .join('\n')}`
+    : ''
+}
 
 ---
 Generado desde Formato de Entrevista de Servicio al Cliente (${new Date(meta.updatedAt).toLocaleString('es-ES')})
@@ -351,6 +361,20 @@ Generado desde Formato de Entrevista de Servicio al Cliente (${new Date(meta.upd
                 <p><strong>Observaciones del entrevistador:</strong> {answers.interviewerObservations || '—'}</p>
               </div>
             </section>
+
+            {answers.customQuestions && answers.customQuestions.length > 0 && (
+              <section className="space-y-2 border-t border-slate-100 pt-4">
+                <h4 className="font-semibold text-slate-900">05. Preguntas Adicionales</h4>
+                <div className="space-y-2 text-xs">
+                  {answers.customQuestions.map((cq, idx) => (
+                    <p key={cq.id}>
+                      <strong>{idx + 1}. {cq.question || 'Pregunta sin título'}:</strong>{' '}
+                      {cq.answer || '—'}
+                    </p>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </div>
       </div>
