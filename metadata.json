@@ -1,0 +1,6 @@
+{
+  "name": "Glow Beauty - Tienda de Maquillaje de Lujo",
+  "description": "Tienda exclusiva de maquillaje Glow Beauty con catálogo premium, carrito de compras y pasarela de pago segura en tonos rosado, dorado y blanco.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
